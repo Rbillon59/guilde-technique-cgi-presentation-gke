@@ -57,7 +57,7 @@ Create a GCS Bucket named : gke-cgi-cloud-build (left other parameters as defaul
 
 #### For the master branch :
 
-Go to the console (https://console.google.com)
+Go to the console (https://console.cloud.google.com/cloud-build/)
 - Triggers
 	- Create trigger
 		- Name : master
@@ -86,11 +86,10 @@ Create another trigger :
 Now each time you will push a branch / code into a branch other than master, the cloud build with trigger the following steps :
 - Docker build (The docker file)
 - Docker push to Google container registry
-- Create a new GKE cluster named with the name of the branch (beware of the typo)
-- Update the Kubernetes deployment (on the already provisionned Kubernetes Cluster named gke-cgi) and store the tfstate file and tflock (files to keep track of the status of the infra) into a GCS Bucket.
-- Deploy the application to the cluster (deployment with 2 pod replicas and a load balancer)
+- Create a new GKE cluster named with the name of the branch (beware of the typo, i.e avoid /) with terraform and store the tfstate file and tflock (files to keep track of the status of the infra) into a GCS Bucket.
+- Deploy the kubernetes deployment with the application of the current branch on 2 pods with one Load Balancer
 - Wait for the load balancer to be provisioned
-- Curl a request to the IP of the load balancer
+- Curl a request to the IP of the load balancer (the test part in fact.. you can put any test you want here, like cucumber, postman, gerkhin, whatever..)
 
 But now we have a cluster running for nothing. So the solution is to destroy it with terraform.
 
@@ -106,10 +105,10 @@ Return to Cloud Build in the console and create a new trigger :
 
 This cloud build trigger will destroy an environement based on a branch name with terraform
 
-Go to Cloud Function and create a new one :
+Go to Cloud Function (https://console.cloud.google.com/functions/) and create a new one :
 - Name : terraform-destroy
 - Memory : 128Mo
-- Trigger : Cloud Pub/Sub on cloud build
+- Trigger : Cloud Pub/Sub on cloud build 
 - Environment : Python 3.7
 	- And copy paste the code from the file cloudfunction.py
 - Function to execute : 
@@ -138,14 +137,16 @@ On the deployment.yaml there is a block defining autoscaling ressource :
 
 And on the cluster creation we have ticked the node autoscaling feature. So lets make it burn.
 
-in your system install apache-bench (on fedora/centOs httpd-tools, on Ubuntu/Debian apache2-tools) on windows .. don't know.
+in your system install apache-bench (ab) (on fedora/centOs `yum/dnf install httpd-tools`, on Ubuntu/Debian `apt install apache2-tools`) on windows .. don't know.
 
 in your command prompt :
 
     ab -n 1000 -c 10 http://your_loadbalancer_ip/compute
 
-As you can see in the main.py file, the /compute request make a loop of 1 million random power random. Which is pretty cpu expensive.
+As you can see in the main.py file, the /compute request make a loop of 1 million random power random follow by division. Which is pretty cpu expensive.
 
 So here there will launch 1000 requests with 10 virtual users. Now go on the Kubernetes Engine menu and check the workload, the pod autoscaler will scale the number of pods up to 7 and 3 pods will be unschedulable because the two nodes are full. So GKE will provision a third node and deploy the remaining pods.
 
-After the end of the bench, your cluster will slowly return to it idle state as defined in your deployment.yml
+You can play with stackdriver monitoring as well during the test to explore available metrics and eventually play with alerting as well
+
+After the end of the bench, your cluster will slowly return to it idle state as defined in your deployment.yml. 2 replicas on 2 nodes
