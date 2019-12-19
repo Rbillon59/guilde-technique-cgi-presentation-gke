@@ -39,8 +39,8 @@ Then at the root of the project (and with terraform installed).
 
 The simpler would be to push it to Google source repositories (don't forget to add ssh key to source repositories for your account)
 
-    git clone this repo
-    cd repo
+    git clone git@github.com:Rbillon59/guilde-technique-cgi-presentation-gke.git
+    cd guilde-technique-cgi-presentation-gke
     rm -rf .git
     git init
     git remote add google ssh://your_account@source.developers.google.com:2022/p/__GCP_PROJECT/r/REPO_NAME
