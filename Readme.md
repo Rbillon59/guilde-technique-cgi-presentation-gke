@@ -44,6 +44,7 @@ The simpler would be to push it to Google source repositories (don't forget to a
     rm -rf .git
     git init
     git remote add google ssh://your_account@source.developers.google.com:2022/p/__GCP_PROJECT/r/REPO_NAME
+    git push google
 
 - If you fork it on Github / Bitbucket, you can do a mirroring of the repo in source repositories
 
