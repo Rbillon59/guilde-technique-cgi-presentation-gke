@@ -1,0 +1,11 @@
+steps:
+# Destroy ephemeral cluster
+- id: 'terraform'
+  name: 'hashicorp/terraform:0.12.18'
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+      terraform init -backend-config="prefix=$BRANCH_NAME" \
+                     -backend-config="bucket=gke-cgi-cloud-build" ephemeral_env/
+      terraform destroy -var="branch_name=$BRANCH_NAME" -auto-approve ephemeral_env/

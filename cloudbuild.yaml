@@ -1,0 +1,27 @@
+steps:
+# This step builds the container image.
+- name: 'gcr.io/cloud-builders/docker'
+  id: Build
+  args:
+  - 'build'
+  - '-t'
+  - 'gcr.io/__GCP_PROJECT/__REPO_NAME:$BRANCH_NAME'
+  - '.'
+
+# This step pushes the image to Container Registry
+- name: 'gcr.io/cloud-builders/docker'
+  id: Push
+  args:
+  - 'push'
+  - 'gcr.io/__GCP_PROJECT/__REPO_NAME:$BRANCH_NAME'
+
+  # This step deploy the application to the Kubernetes Cluster
+- name: 'gcr.io/cloud-builders/kubectl'
+  id: Deploy
+  args:
+  - 'apply'
+  - '-f'
+  - 'deployment.yaml'
+  env:
+  - 'CLOUDSDK_COMPUTE_ZONE=europe-west2-a'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=gke-cgi'

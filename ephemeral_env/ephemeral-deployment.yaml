@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-cgi
+  labels:
+    app: frontend-ephemeral
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend-ephemeral
+  template:
+    metadata:
+      labels:
+        app: frontend-ephemeral
+    spec:
+      containers:
+      - name: hello-cgi-ephemeral
+        image: gcr.io/__GCP_PROJECT/__REPO_NAME:_BRANCH_NAME
+        resources:
+          limits:
+            cpu: "1"
+          requests:
+            cpu: "0.1"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: frontend-ephemeral
+  name: lb-frontend-ephemeral
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 5000
+  selector:
+    app: frontend-ephemeral
+  sessionAffinity: None
+  type: LoadBalancer

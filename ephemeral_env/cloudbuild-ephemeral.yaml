@@ -1,0 +1,71 @@
+steps:
+
+# This step builds the container image.
+- name: 'gcr.io/cloud-builders/docker'
+  id: Build
+  args:
+  - 'build'
+  - '-t'
+  - 'gcr.io/__GCP_PROJECT/__REPO_NAME:$BRANCH_NAME'
+  - '.'
+
+# This step pushes the image to Container Registry
+- name: 'gcr.io/cloud-builders/docker'
+  id: Push
+  args:
+  - 'push'
+  - 'gcr.io/__GCP_PROJECT/__REPO_NAME:$BRANCH_NAME'
+
+
+# Provision ephemeral cluster
+- id: 'terraform'
+  name: 'hashicorp/terraform:0.12.18'
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+      terraform init -backend-config="bucket=gke-cgi-cloud-build" -backend-config="prefix=$BRANCH_NAME" ephemeral_env/
+      terraform apply -var="branch_name=$BRANCH_NAME" -auto-approve ephemeral_env/
+
+# Deploy the application
+- name: 'gcr.io/cloud-builders/kubectl'
+  id: Deploy
+  entrypoint: sh
+  args:
+  - '-c'
+  - |
+    sed -i "s|_BRANCH_NAME|$BRANCH_NAME|g" ephemeral_env/ephemeral-deployment.yaml 
+    gcloud container clusters get-credentials --project="__GCP_PROJECT" --zone="europe-west2-a" "$BRANCH_NAME"
+    kubectl apply -f ephemeral_env/ephemeral-deployment.yaml
+
+  env:
+  - 'CLOUDSDK_COMPUTE_ZONE=europe-west2-a'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=$BRANCH_NAME'
+
+# Wait for loadbalancer
+- name: 'gcr.io/cloud-builders/kubectl'
+  id: Wait for LB
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    external_ip=""; while [ -z $external_ip ]; do echo "Waiting for end point..."; external_ip=$(kubectl get svc lb-frontend-ephemeral --template="{{range .status.loadBalancer.ingress}}{{.ip}}{{end}}"); [ -z "$external_ip" ] && sleep 10; done; echo "End point ready-" && echo $external_ip; export endpoint=$external_ip
+    echo $endpoint > endpoint.txt
+  env:
+  - 'CLOUDSDK_COMPUTE_ZONE=europe-west2-a'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=$BRANCH_NAME'
+
+
+# Running test against the ephemeral cluster
+- name: 'gcr.io/cloud-builders/curl'
+  id: Test-app
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - |
+    endpoint=$(cat endpoint.txt)
+    curl $endpoint/hello
+
+
+  
+
