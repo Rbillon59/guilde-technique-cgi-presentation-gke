@@ -11,7 +11,7 @@ Click the *Start* button to begin the workshop
 ## 1. Create a GCP Project
 
 ```bash
-"gcloud projects create gke-cgi-${RANDOM}"
+gcloud projects create gke-cgi-${RANDOM}
 ```
 
 Now select the created project in your cloudshell environment
@@ -21,7 +21,7 @@ Now select the created project in your cloudshell environment
 
 **Replace every __GCP_PROJECT with the generated project ID**
 ```bash
-"find . -type f -exec sed -i 's/__GCP_PROJECT/'$DEVSHELL_PROJECT_ID'/g' {} +"
+find . -type f -exec sed -i 's/__GCP_PROJECT/'$DEVSHELL_PROJECT_ID'/g' {} +
 ```
 
 ## 2. Create a Kubernetes cluster
@@ -38,9 +38,9 @@ with gcloud command line :
 The simpler would be to push it to Google source repositories (don't forget to add ssh key to source repositories for your account)
 
     ```bash
-    "rm -rf .git
+    rm -rf .git
     git init
-    git remote add google ssh://your_account@source.developers.google.com:2022/p/__GCP_PROJECT/r/REPO_NAME"
+    git remote add google ssh://your_account@source.developers.google.com:2022/p/__GCP_PROJECT/r/REPO_NAME
     ```
 
     Now replace the __REPO_NAME variable with the actual created repo name
