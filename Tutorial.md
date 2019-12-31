@@ -4,7 +4,7 @@
 
 All the workshops you saw on the presentation are reproductible and this walkthough will guide you all over.
 
-** Time to complete **: About 30 minutes
+**Time to complete**: About 30 minutes
 
 Click the *Start* button to begin the workshop
 
@@ -19,7 +19,7 @@ Now select the created project in your cloudshell environment
 ![Image of Cloud Shell selecting GCP project]
 (./gcp-project.png)
 
-** Replace every __GCP_PROJECT with the generated project ID **
+**Replace every __GCP_PROJECT with the generated project ID**
 ```bash
 "find . -type f -exec sed -i 's/__GCP_PROJECT/'$DEVSHELL_PROJECT_ID'/g' {} +"
 ```
