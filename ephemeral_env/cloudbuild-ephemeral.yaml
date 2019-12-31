@@ -24,7 +24,7 @@ steps:
   args:
   - '-c'
   - |
-      terraform init -backend-config="bucket=gke-cgi-cloud-build" -backend-config="prefix=$BRANCH_NAME" ephemeral_env/
+      terraform init -backend-config="bucket=__GCP_PROJECT-cloud-build" -backend-config="prefix=$BRANCH_NAME" ephemeral_env/
       terraform apply -var="branch_name=$BRANCH_NAME" -auto-approve ephemeral_env/
 
 # Deploy the application

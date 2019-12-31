@@ -1,6 +1,6 @@
 provider "google" {
   credentials = "${file("account.json")}"
-  project     = "gke-cgi"
+  project     = "__GCP_PROJECT"
   region      = "europe-west2"
 }
 

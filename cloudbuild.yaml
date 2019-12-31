@@ -24,4 +24,4 @@ steps:
   - 'deployment.yaml'
   env:
   - 'CLOUDSDK_COMPUTE_ZONE=europe-west2-a'
-  - 'CLOUDSDK_CONTAINER_CLUSTER=gke-cgi'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=__GCP_PROJECT'

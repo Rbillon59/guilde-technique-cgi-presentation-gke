@@ -2,7 +2,7 @@ variable "branch_name" {
 }
 
 provider "google" {
-  project     = "gke-cgi"
+  project     = "__GCP_PROJECT"
   region      = "europe-west2"
 }
 
