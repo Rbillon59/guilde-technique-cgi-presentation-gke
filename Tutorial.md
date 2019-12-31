@@ -29,13 +29,43 @@ find . -type f -exec sed -i 's/__GCP_PROJECT/'$DEVSHELL_PROJECT_ID'/g' {} +
 
 ## 2. Create a Kubernetes cluster
 
-with gcloud command line :
+**First we need to enable the billing for the project and enabling the Kubernetes API**
+
+Get your billing account list
+
+```bash
+gcloud alpha billing accounts list
+```
+
+Select the one you want to use for the project
+
+```bash
+gcloud alpha billing projects link $DEVSHELL_PROJECT_ID --billing-account XXXXXX-XXXXXX-XXXXXX
+```
+
+Then enable the Kubernetes API
+
+```bash
+gcloud services enable container.googleapis.com
+```
+
+## Command line cluster creation
+
+with gcloud command line, create your cluster :
 
 ```bash
 gcloud beta container --project "$DEVSHELL_PROJECT_ID" clusters create "$DEVSHELL_PROJECT_ID" --zone "europe-west2-a" --no-enable-basic-auth --cluster-version "1.13.11-gke.14" --machine-type "n1-standard-1" --image-type "COS" --disk-type "pd-standard" --disk-size "100" --metadata disable-legacy-endpoints=true --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" --num-nodes "2" --enable-cloud-logging --enable-cloud-monitoring --enable-ip-alias --network "projects/$DEVSHELL_PROJECT_ID/global/networks/default" --subnetwork "projects/$DEVSHELL_PROJECT_ID/regions/europe-west2/subnetworks/default" --default-max-pods-per-node "110" --enable-autoscaling --min-nodes "1" --max-nodes "3" --addons HorizontalPodAutoscaling,HttpLoadBalancing --enable-autoupgrade --enable-autorepair
 ```
 
 ## 3. CI/CD on GKE with Cloudbuild
+
+Create a Google Source Repository
+
+```bash
+REPO_NAME="repo_$DEVSHELL_PROJECT_ID"
+gcloud source repos create ${REPO_NAME}
+find . -type f -exec sed -i 's/__REPO_NAME/'${REPO_NAME}'/g' {} +
+```
 
 ### Push the code to a repository :
 
@@ -44,20 +74,23 @@ The simpler would be to push it to Google source repositories (don't forget to a
 ```bash
 rm -rf .git
 git init
-git remote add google ssh://your_account@source.developers.google.com:2022/p/__GCP_PROJECT/r/REPO_NAME
+git remote add google https://source.developers.google.com/p/$DEVSHELL_PROJECT_ID/r/$REPO_NAME
+git add .
+git commit -m "Push to Google Repo"
+git push google master
 ```
 
     Now replace the __REPO_NAME variable with the actual created repo name
-
-```bash
-find . -type f -exec sed -i 's/__REPO_NAME/'YOUR_REPO_NAME'/g' {} +
-```
 
 ## 4. Set Cloud build service account role
 
 You need to update the Cloud Build service account as well so it can deploy to the cluster. 
 
-In IAM, locate the cloud build service account and add it a role called "Kubernetes Cluster Administrator" to grant it the right to manage it.
+On the console ( https://console.cloud.google.com/iam-admin )
+
+find the : XXXXXXXX@cloudbuild.gserviceaccount.com
+
+Add it a role called "Kubernetes Engine Administrator" to grant it the right to manage it.
 
 ## 5. Create the GCS Bucket to store terraform states
 
@@ -68,6 +101,8 @@ gsutil mb gs://$DEVSHELL_PROJECT_ID-cloud-build/
 ## 6. For the master branch :
 
 Go to the console (https://console.cloud.google.com/cloud-build)
+Activer l'API cloud build
+
 - Triggers
 	- Create trigger
 		- Name : master
@@ -104,7 +139,7 @@ Now each time you will push a branch / code into a branch other than master, the
 
 But now we have a cluster running for nothing. So the solution is to destroy it with terraform.
 
-Return to Cloud Build in the console and create a new trigger :
+## Return to Cloud Build in the console and create a new trigger :
 - Name : terraform-destroy
 - Trigger type : Branch
 - Regex : .*
@@ -116,7 +151,12 @@ Return to Cloud Build in the console and create a new trigger :
 
 This cloud build trigger will destroy an environement based on a branch name with terraform
 
-Go to Cloud Function and create a new one :
+## Go to Cloud Function and create a new one :
+
+https://console.cloud.google.com/functions
+
+Enable the API :
+
 - Name : terraform-destroy
 - Memory : 128Mo
 - Trigger : Cloud Pub/Sub on cloud build
@@ -157,7 +197,8 @@ sudo apt install apache2-utils
 
 in your command prompt :
 ```bash
-ab -n 1000 -c 10 http://your_loadbalancer_ip/compute
+LB_IP=$(kubectl get svc lb-frontend --template="{{range .status.loadBalancer.ingress}}{{.ip}}{{end}}")
+ab -n 1000 -c 10 http://$LB_IP/compute
 ```
 
 As you can see in the main.py file, the /compute request make a loop of 1 million random power random. Which is pretty cpu expensive.
@@ -172,4 +213,8 @@ After the end of the bench, your cluster will slowly return to it idle state as 
 
 You're all set!
 
-**Don't forget to clean up after yourself**: If you created test projects, be sure to delete them to avoid unnecessary charges. Use `gcloud projects delete $DEVSHELL_PROJECT_ID`.
+**Don't forget to clean up after yourself**: If you created test projects, be sure to delete them to avoid unnecessary charges. Use 
+
+```bash
+gcloud projects delete $DEVSHELL_PROJECT_ID
+```
